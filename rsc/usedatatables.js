@@ -89,8 +89,18 @@
                     callback: new Function
                 },
                 className: 'table',
-                footer: false
+                footer: false,
+                treegrid: false
             }, options.use ? options.use : {});
+
+            if(useOptions.treegrid === true && $.fn.hasOwnProperty('treegrid')){
+                
+                var fnCreatedRowCopy = typeof options.createdRow === "function" ? options.createdRow : new Function;
+                options.createdRow = function( row, data, dataIndex ) {
+                    if(!$(row).hasClass('treegrid-' + dataIndex)) $(row).addClass('treegrid-' + dataIndex);
+                    fnCreatedRowCopy.call(this, row, data, dataIndex);
+                }
+            }
 
             var settings = $.extend({}, defaults, options);
 
@@ -125,8 +135,11 @@
                     tfoot.appendChild(tr);
                     $this[0].appendChild(tfoot);
                 }
-
                 $this.DataTable(settings);
+                if(useOptions.treegrid === true && $.fn.hasOwnProperty('treegrid')){
+
+                    $this.treegrid();
+                }
                 setTimeout(function () { fnAdjustColumnSizing(); }, 350);
                 adjustEvent();
             }
