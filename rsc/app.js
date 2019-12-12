@@ -64,7 +64,9 @@ function ProcessExcel(datos, ele) {
             columns: colKeys,
             data: excelRows,
             scrollY: 'calc(100vh - 140px)',
-            scrollX: true
+            scrollX: true,
+            dom: 'Bft',
+            buttons: ['copy', 'csv', 'excel', 'pdf', 'print']
         });
     } else {
     }
