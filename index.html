@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+        <title>Document</title>
+        <link href="css/infragistics.theme.css" rel="stylesheet" />
+        <link href="css/infragistics.css" rel="stylesheet" />
+        <link href="css/jquery.dataTables.min.css" rel="stylesheet" />
+        <link href="css/bootstrap.min.css" rel="stylesheet" />
+        <link href="css/jquery.dataTables.min.css" rel="stylesheet" />
+        <link href="css/dataTables.bootstrap4.min.css" rel="stylesheet" />
+
+        <style>
+            * {
+                font-size: 11px;
+                text-transform: uppercase !important;
+            }
+            html {
+                font-family: sans-serif;
+                -webkit-text-size-adjust: 100%;
+                -ms-text-size-adjust: 100%;
+                font-size: 11px;
+            }
+            body {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            #sampleContainer ol {
+                padding: 0px 0px 0px 15px;
+                margin: 0;
+            }
+
+            #sampleContainer input {
+                margin: 10px 0;
+            }
+            #result {
+                display: none;
+                text-align: center;
+            }
+            .contenedor {
+                display: flex;
+            }
+            .contenedor > div {
+                flex: 1;
+                padding: 8px;
+                max-width: 50%;
+                overflow: auto;
+            }
+            .consolidar {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: 15px;
+            }
+            .btn-green {
+                background-color: rgb(98, 203, 49);
+                border: 1px solid rgb(98, 203, 49);
+            }
+            .btn-blue {
+                background-color: #34495e;
+                border: 1px solid #34495e;
+                color: white;
+            }
+            .btn-blue:hover {
+                color: white !important;
+            }
+            .btn {
+                height: 32px;
+            }
+            .ok {
+                background-color: rgba(98, 203, 49, 0.64) !important;
+                color: black !important;
+            }
+            .bad {
+                background-color: rgba(189, 33, 48, 0.73) !important;
+                color: rgb(255, 255, 255) !important;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="result"></div>
+        <div class="contenedor">
+            <div>
+                <input
+                    type="file"
+                    id="input"
+                    accept="application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    class="btn btn-blue"
+                />
+                <button id="consolidarTabla1" class="btn btn-green">Consolidar</button>
+                <table id="grid1" class="table table-striped nowrap"></table>
+            </div>
+            <div>
+                <input
+                    type="file"
+                    id="input2"
+                    accept="application/vnd.ms-excel, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                    class="btn btn-blue"
+                />
+                <button id="consolidarTabla2" class="btn btn-green">Consolidar</button>
+                <table id="grid2" class="table table-striped nowrap"></table>
+            </div>
+        </div>
+        <script src="js/modernizr-2.8.3.js"></script>
+        <script src="js/jquery-1.11.3.min.js"></script>
+        <script src="js/jquery-ui.min.js"></script>
+
+        <script type="text/javascript" src="js/infragistics.core.js"></script>
+        <script type="text/javascript" src="js/infragistics.lob.js"></script>
+        <script type="text/javascript" src="js/infragistics.ext_core.js"></script>
+        <script type="text/javascript" src="js/infragistics.ext_collections.js"></script>
+        <script type="text/javascript" src="js/infragistics.ext_text.js"></script>
+        <script type="text/javascript" src="js/infragistics.ext_io.js"></script>
+        <script type="text/javascript" src="js/infragistics.ext_ui.js"></script>
+        <script type="text/javascript" src="js/infragistics.documents.core_core.js"></script>
+        <script type="text/javascript" src="js/infragistics.ext_collectionsextended.js"></script>
+        <script type="text/javascript" src="js/infragistics.excel_core.js"></script>
+        <script type="text/javascript" src="js/infragistics.ext_threading.js"></script>
+        <script type="text/javascript" src="js/infragistics.ext_web.js"></script>
+        <script type="text/javascript" src="js/infragistics.xml.js"></script>
+        <script type="text/javascript" src="js/infragistics.documents.core_openxml.js"></script>
+        <script src="js/bootstrap.min.js"></script>
+        <script src="js/jquery.dataTables.min.js"></script>
+        <script src="js/usedatatables.js"></script>
+        <script src="js/lockui.js"></script>
+
+        <script
+            type="text/javascript"
+            src="js/infragistics.excel_serialization_openxml.js"
+        ></script>
+        <script>
+            var datosTabla1 = {},
+                datosTabla2 = {};
+            $(function() {
+                $('#input').on('click', function() {
+                    this.value = '';
+                });
+                $('#input').on('change', function() {
+                    UI.lock();
+                    var excelFile,
+                        fileReader = new FileReader();
+
+                    $('#result').hide();
+
+                    fileReader.onload = function(e) {
+                        var buffer = new Uint8Array(fileReader.result);
+
+                        $.ig.excel.Workbook.load(
+                            buffer,
+                            function(workbook) {
+                                var column,
+                                    row,
+                                    newRow,
+                                    cellValue,
+                                    columnIndex,
+                                    i,
+                                    worksheet = workbook.worksheets(0),
+                                    columnsNumber = 0,
+                                    gridColumns = [],
+                                    data = [],
+                                    worksheetRowsCount;
+
+                                // Both the columns and rows in the worksheet are lazily created and because of this most of the time worksheet.columns().count() will return 0
+                                // So to get the number of columns we read the values in the first row and count. When value is null we stop counting columns:
+                                while (worksheet.rows(0).getCellValue(columnsNumber)) {
+                                    columnsNumber++;
+                                }
+
+                                // Iterating through cells in first row and use the cell text as key and header text for the grid columns
+                                for (columnIndex = 0; columnIndex < columnsNumber; columnIndex++) {
+                                    column = worksheet.rows(0).getCellText(columnIndex);
+                                    gridColumns.push({ headerText: column, key: column });
+                                }
+
+                                // We start iterating from 1, because we already read the first row to build the gridColumns array above
+                                // We use each cell value and add it to json array, which will be used as dataSource for the grid
+                                for (
+                                    i = 1, worksheetRowsCount = worksheet.rows().count();
+                                    i < worksheetRowsCount;
+                                    i++
+                                ) {
+                                    newRow = {};
+                                    row = worksheet.rows(i);
+
+                                    for (
+                                        columnIndex = 0;
+                                        columnIndex < columnsNumber;
+                                        columnIndex++
+                                    ) {
+                                        cellValue = row.getCellText(columnIndex);
+                                        newRow[gridColumns[columnIndex].key] = cellValue;
+                                    }
+
+                                    data.push(newRow);
+                                }
+
+                                // we can also skip passing the gridColumns use autoGenerateColumns = true, or modify the gridColumns array
+                                UI.unlock();
+                                createGrid(data, gridColumns);
+                            },
+                            function(error) {
+                                $('#result').text('El archivo Excel está corrupto.');
+                                $('#result').attr('class', 'btn btn-danger');
+                                $('#result').show();
+                            }
+                        );
+                    };
+
+                    if (this.files.length > 0) {
+                        excelFile = this.files[0];
+                        if (
+                            excelFile.type === 'application/vnd.ms-excel' ||
+                            excelFile.type ===
+                                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+                            (excelFile.type === '' &&
+                                (excelFile.name.endsWith('xls') || excelFile.name.endsWith('xlsx')))
+                        ) {
+                            fileReader.readAsArrayBuffer(excelFile);
+                        } else {
+                            $('#result').text(
+                                "El formato seleccionado no  es soportado. Por favor seleccione un archivo de Excel válido ('.xls, *.xlsx')."
+                            );
+                            $('#result').attr('class', 'btn btn-danger');
+                            $('#result').show();
+                        }
+                    }
+                });
+                $('#input2').on('click', function() {
+                    this.value = '';
+                });
+                $('#input2').on('change', function() {
+                    UI.lock();
+                    var excelFile,
+                        fileReader = new FileReader();
+
+                    $('#result').hide();
+
+                    fileReader.onload = function(e) {
+                        var buffer = new Uint8Array(fileReader.result);
+
+                        $.ig.excel.Workbook.load(
+                            buffer,
+                            function(workbook) {
+                                var column,
+                                    row,
+                                    newRow,
+                                    cellValue,
+                                    columnIndex,
+                                    i,
+                                    worksheet = workbook.worksheets(0),
+                                    columnsNumber = 0,
+                                    gridColumns = [],
+                                    data = [],
+                                    worksheetRowsCount;
+
+                                // Both the columns and rows in the worksheet are lazily created and because of this most of the time worksheet.columns().count() will return 0
+                                // So to get the number of columns we read the values in the first row and count. When value is null we stop counting columns:
+                                while (worksheet.rows(0).getCellValue(columnsNumber)) {
+                                    columnsNumber++;
+                                }
+
+                                // Iterating through cells in first row and use the cell text as key and header text for the grid columns
+                                for (columnIndex = 0; columnIndex < columnsNumber; columnIndex++) {
+                                    column = worksheet.rows(0).getCellText(columnIndex);
+                                    gridColumns.push({ headerText: column, key: column });
+                                }
+
+                                // We start iterating from 1, because we already read the first row to build the gridColumns array above
+                                // We use each cell value and add it to json array, which will be used as dataSource for the grid
+                                for (
+                                    i = 1, worksheetRowsCount = worksheet.rows().count();
+                                    i < worksheetRowsCount;
+                                    i++
+                                ) {
+                                    newRow = {};
+                                    row = worksheet.rows(i);
+
+                                    for (
+                                        columnIndex = 0;
+                                        columnIndex < columnsNumber;
+                                        columnIndex++
+                                    ) {
+                                        cellValue = row.getCellText(columnIndex);
+                                        newRow[gridColumns[columnIndex].key] = cellValue;
+                                    }
+
+                                    data.push(newRow);
+                                }
+
+                                // we can also skip passing the gridColumns use autoGenerateColumns = true, or modify the gridColumns array
+                                UI.unlock();
+                                createGrid2(data, gridColumns);
+                            },
+                            function(error) {
+                                $('#result').text('El archivo Excel está corrupto.');
+                                $('#result').attr('class', 'btn btn-danger');
+                                $('#result').show();
+                            }
+                        );
+                    };
+
+                    if (this.files.length > 0) {
+                        excelFile = this.files[0];
+                        if (
+                            excelFile.type === 'application/vnd.ms-excel' ||
+                            excelFile.type ===
+                                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+                            (excelFile.type === '' &&
+                                (excelFile.name.endsWith('xls') || excelFile.name.endsWith('xlsx')))
+                        ) {
+                            fileReader.readAsArrayBuffer(excelFile);
+                        } else {
+                            $('#result').text(
+                                "El formato seleccionado no  es soportado. Por favor seleccione un archivo de Excel válido ('.xls, *.xlsx')."
+                            );
+                            $('#result').attr('class', 'btn btn-danger');
+                            $('#result').show();
+                        }
+                    }
+                });
+            });
+
+            $('#consolidarTabla1').on('click', function() {
+                if (Array.isArray(datosTabla2.data) && datosTabla2.data.length > 0) {
+                    var datosTabla = $('#grid1').useDataTable('data');
+                    var dTabla2 = $('#grid2').useDataTable('data');
+                    datosTabla.forEach(function(d, i) {
+                        var current = i;
+                        var keysT = Object.keys(d);
+                        var filtro = dTabla2.some(function(t) {
+                            var currentKeys = Object.keys(t);
+                            if (currentKeys.length !== keysT.length) return false;
+
+                            return keysT.every(function(key) {
+                                return d[key] === t[key];
+                            });
+                        });
+                        if (filtro) {
+                            $('#grid1 tbody tr:eq(' + current + ')')
+                                .addClass('ok')
+                                .removeClass('bad');
+                        } else {
+                            $('#grid1 tbody tr:eq(' + current + ')')
+                                .removeClass('ok')
+                                .addClass('bad');
+                        }
+                    });
+                } else {
+                    $('#result').text('No hay datos para comparar.');
+                    $('#result').attr('class', 'btn btn-warning');
+                    $('#result').show();
+                }
+            });
+            $('#consolidarTabla2').on('click', function() {
+                if (Array.isArray(datosTabla1.data) && datosTabla1.data.length > 0) {
+                    var datosTabla = $('#grid2').useDataTable('data');
+                    var dTabla1 = $('#grid1').useDataTable('data');
+                    datosTabla.forEach(function(d, i) {
+                        var current = i;
+                        var keysT = Object.keys(d);
+                        var filtro = dTabla1.some(function(t) {
+                            var currentKeys = Object.keys(t);
+                            if (currentKeys.length !== keysT.length) return false;
+
+                            return keysT.every(function(key) {
+                                return d[key] === t[key];
+                            });
+                        });
+                        if (filtro) {
+                            $('#grid2 tbody tr:eq(' + current + ')')
+                                .addClass('ok')
+                                .removeClass('bad');
+                        } else {
+                            $('#grid2 tbody tr:eq(' + current + ')')
+                                .removeClass('ok')
+                                .addClass('bad');
+                        }
+                    });
+                } else {
+                    $('#result').text('No hay datos para comparar.');
+                    $('#result').attr('class', 'btn btn-warning');
+                    $('#result').show();
+                }
+            });
+
+            function createGrid(data, gridColumns) {
+                var col = gridColumns.map(function(c) {
+                    return {
+                        data: c.key,
+                        title: c.headerText
+                    };
+                });
+
+                datosTabla1.data = data;
+                datosTabla1.col = col;
+
+                $('#grid1').useDataTable({
+                    columns: col,
+                    data: data,
+                    scrollY: 'calc(100vh - 130px)',
+                    initComplete: function() {
+                        $('#grid1_filter input').attr('class', 'form-control');
+                    }
+                });
+            }
+
+            function createGrid2(data, gridColumns) {
+                var col = gridColumns.map(function(c) {
+                    return {
+                        data: c.key,
+                        title: c.headerText
+                    };
+                });
+
+                datosTabla2.data = data;
+                datosTabla2.col = col;
+
+                $('#grid2').useDataTable({
+                    columns: col,
+                    data: data,
+                    scrollY: 'calc(100vh - 130px)',
+                    initComplete: function() {
+                        $('#grid2_filter input').attr('class', 'form-control');
+                    }
+                });
+            }
+        </script>
+    </body>
+</html>
