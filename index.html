@@ -6,95 +6,7 @@
         <meta http-equiv="X-UA-Compatible" content="ie=edge" />
         <title>Consolidacion</title>
         <link href="rsc/datatables.min.css" rel="stylesheet" />
-
-        <style>
-            * {
-                font-size: 11px;
-                text-transform: uppercase !important;
-            }
-            html {
-                font-family: sans-serif;
-                -webkit-text-size-adjust: 100%;
-                -ms-text-size-adjust: 100%;
-                font-size: 11px;
-            }
-            body {
-                margin: 0;
-                padding: 0;
-                box-sizing: border-box;
-            }
-            #sampleContainer ol {
-                padding: 0px 0px 0px 15px;
-                margin: 0;
-            }
-
-            #sampleContainer input {
-                margin: 10px 0;
-            }
-            #result {
-                display: none;
-                text-align: center;
-            }
-            .contenedor {
-                display: flex;
-            }
-            .contenedor > div {
-                flex: 1;
-                padding: 8px;
-                max-width: 50%;
-                /* overflow: hidden; */
-                min-height: calc(100vh - 10px);
-            }
-            .consolidar {
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                padding: 15px;
-            }
-            .btn-green {
-                background-color: rgb(98, 203, 49);
-                border: 1px solid rgb(98, 203, 49);
-            }
-            .btn-blue {
-                background-color: #34495e;
-                border: 1px solid #34495e;
-                color: white;
-            }
-            .btn-blue:hover {
-                color: white !important;
-            }
-            .btn {
-                height: 32px;
-            }
-            .ok {
-                background-color: rgba(98, 203, 49, 0.64) !important;
-                color: black !important;
-            }
-            .bad {
-                background-color: rgba(189, 33, 48, 0.73) !important;
-                color: rgb(255, 255, 255) !important;
-            }
-            .container-tabla {
-                background-color: rgba(108, 117, 125, 0.1);
-                min-width: 100%;
-                min-height: calc(100% - 30px);
-                border: 3px;
-                border-color: rgb(108, 117, 125);
-                border-style: dashed;
-                margin-top: 5px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                flex-direction: column;
-            }
-            .container-tabla .text-drag {
-                color: #34495e;
-                font-size: 2em;
-            }
-            div[id*='_filter'] {
-                float: right;
-            }
-        </style>
+        <link rel="stylesheet" href="rsc/style.css" />
     </head>
     <body>
         <div id="result"></div>
@@ -179,6 +91,31 @@
                         class="table table-striped nowrap"
                         style="width: 100%;"
                     ></table>
+                </div>
+            </div>
+        </div>
+        <div
+            class="modal fade"
+            id="modalMensage"
+            tabindex="-1"
+            role="dialog"
+            aria-labelledby="exampleModalLabel"
+            aria-hidden="true"
+        >
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">ALERTA</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body" id="mensage"></div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            Aceptar
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

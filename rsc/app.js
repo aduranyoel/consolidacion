@@ -1,3 +1,24 @@
+function Dlg(message, type) {
+    if (type === 'error')
+        $('.modal-header').css({
+            'background-color': '#e74c3c',
+            color: 'white'
+        });
+    if (type === 'warning')
+        $('.modal-header').css({
+            'background-color': '#ffa500',
+            color: 'white'
+        });
+
+    $('#mensage').html(message);
+    $('#modalMensage').modal('show');
+}
+Dlg.error = function(message) {
+    Dlg(message, 'error');
+};
+Dlg.warning = function(message) {
+    Dlg(message, 'warning');
+};
 function Upload(ele) {
     //Reference the FileUpload element.
     var fileUpload = document.getElementById(ele);
@@ -11,7 +32,11 @@ function Upload(ele) {
             //For Browsers other than IE.
             if (reader.readAsBinaryString) {
                 reader.onload = function(e) {
-                    ProcessExcel(e.target.result, ele);
+                    try {
+                        ProcessExcel(e.target.result, ele);
+                    } catch (err) {
+                        Dlg.error(err.stack);
+                    }
                 };
                 reader.readAsBinaryString(fileUpload.files[0]);
             } else {
@@ -22,27 +47,26 @@ function Upload(ele) {
                     for (var i = 0; i < bytes.byteLength; i++) {
                         data += String.fromCharCode(bytes[i]);
                     }
-                    ProcessExcel(data, ele);
+                    try {
+                        ProcessExcel(data, ele);
+                    } catch (err) {
+                        Dlg.error(err.stack);
+                    }
                 };
                 reader.readAsArrayBuffer(fileUpload.files[0]);
             }
         } else {
-            alert('This browser does not support HTML5.');
+            Dlg.warning('Este navegador no soporta HTML5.');
         }
     } else {
-        alert('Please upload a valid Excel file.');
+        Dlg.warning('Por favor seleccione un archivo de Excel valido.');
     }
 }
 function ProcessExcel(datos, ele) {
-    // Read the Excel File data.
     var workbook = XLSX.read(datos, {
         type: 'binary'
     });
-
-    //Fetch the name of First Sheet.
     var firstSheet = workbook.SheetNames[0];
-
-    //Read all rows from First Sheet into an JSON array.
     var excelRows = XLSX.utils.sheet_to_row_object_array(workbook.Sheets[firstSheet]);
 
     if (Array.isArray(excelRows) && excelRows.length > 0) {
@@ -66,9 +90,55 @@ function ProcessExcel(datos, ele) {
             scrollY: 'calc(100vh - 140px)',
             scrollX: true,
             dom: 'Bft',
-            buttons: ['copy', 'csv', 'excel', 'pdf', 'print']
+            buttons: ['copy', 'excel', 'pdf', 'print'],
+            initComplete: function() {
+                $('#tabla_' + ele + '_filter input').attr('class', 'form-control');
+                $('#tabla_' + ele).off('dblclick', 'td');
+                $('#tabla_' + ele).on('dblclick', 'td', function() {
+                    var currentCell = $('#tabla_' + ele)
+                        .DataTable()
+                        .cell(this);
+                    var col = currentCell[0][0].column;
+                    var row = currentCell[0][0].row;
+                    var $this = $(this);
+                    $this.html(
+                        '<input id="tabla_' +
+                            ele +
+                            '_col' +
+                            col +
+                            '_row' +
+                            row +
+                            '" class="form-control" type="text" value="' +
+                            currentCell.data() +
+                            '"/>'
+                    );
+
+                    $('#tabla_' + ele + '_col' + col + '_row' + row).off('blur');
+                    $('#tabla_' + ele + '_col' + col + '_row' + row).on('blur', function() {
+                        $('#tabla_' + ele)
+                            .DataTable()
+                            .cell($this)
+                            .data(this.value);
+                        $this.html(this.value);
+                    });
+
+                    $('#tabla_' + ele + '_col' + col + '_row' + row).off('keypress');
+                    $('#tabla_' + ele + '_col' + col + '_row' + row).on('keypress', function(e) {
+                        if (e.keyCode === 13) {
+                            $('#tabla_' + ele)
+                                .DataTable()
+                                .cell($this)
+                                .data(this.value);
+                            $this.html(this.value);
+                        }
+                    });
+
+                    $('#tabla_' + ele + '_col' + col + '_row' + row).focus();
+                });
+            }
         });
     } else {
+        Dlg.warning('No hay datos para llenar la tabla.');
     }
 }
 function consolidar(target, to) {
@@ -97,15 +167,20 @@ function consolidar(target, to) {
             }
         });
     } else {
-        alert('NO HAY DATOS PARA CONSOLIDAR');
+        Dlg.warning('No hay datos para consolidar');
     }
 }
 function expandir(exp, colap) {
+    function adjustDT() {
+        $.fn.dataTable.tables({ visible: true, api: true }).columns.adjust();
+    }
     if ($(exp)[0].style.minWidth === '') {
         $(exp).css('min-width', '100%');
         $(colap).hide();
+        adjustDT();
     } else {
         $(exp).css('min-width', '');
         $(colap).show();
+        adjustDT();
     }
 }
